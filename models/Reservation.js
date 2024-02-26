@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
 
 const ReservationSchema = new mongoose.Schema({
     uid: {

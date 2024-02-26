@@ -7,6 +7,7 @@ const CinemaSchema = new mongoose.Schema({
         },
         name: {
             type: String,
+            unique: true,
             required: true,
             min: 1,
             max: 128,

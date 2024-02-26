@@ -1,9 +1,11 @@
-const jwt = require('jsonwebtoken');
 const fetch = require('node-fetch');
 
 exports.authenticate = async (req, res, next) => {
     const token = req.headers.authorization?.split(" ")[1]; // Bearer <token>
-    if (!token) return res.status(401).send("Accès refusé. Aucun token fourni.");
+    if (!token) return res.status(401).json(
+        { 
+            error: { code: 401, message: "Accès refusé. Aucun token fourni." }
+        });
 
     try {
         const url = `${process.env.BASE_URL}:${process.env.AUTH_API_PORT}/api${process.env.VALIDATE_TOKEN_ENDPOINT}`;
@@ -15,9 +17,8 @@ exports.authenticate = async (req, res, next) => {
 
         const data = await response.json();
 
-        if (!data.success) return res.status(403).json(
+        if (data.error) return res.status(403).json(
             {
-                success: false, 
                 error: { code: 403, message: "Access token invalide." }
             });
 

@@ -9,7 +9,7 @@ const swaggerFile = require('./doc/swagger-output.json');
 dotenv.config();
 
 // 🚗 Routes
-//const cinemaRoute = require("./routes/cinema")
+const cinemaRoute = require("./routes/cinema")
 
 // ➡️ Module imports :
 //const swagger = require("./doc/swagger.js");
@@ -30,7 +30,7 @@ app.use(helmet());
 app.use(morgan("common"));
 
 // =====> API Routes
-//app.use("/api/cinema", cinemaRoute);
+app.use(`/api${process.env.CINEMA_ENDPOINT}`, cinemaRoute);
 
 // =====> Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerFile, { swaggerOptions: { persistAuthorization: true } }));
