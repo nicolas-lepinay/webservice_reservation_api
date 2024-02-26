@@ -2,10 +2,12 @@ const fetch = require('node-fetch');
 
 exports.authenticate = async (req, res, next) => {
     const token = req.headers.authorization?.split(" ")[1]; // Bearer <token>
+    !token ? console.log("TOKEN ABSENT :(") : console.log("TOKEN PRESENT !");
     if (!token) return res.status(401).json(
         { 
             error: { code: 401, message: "Accès refusé. Aucun token fourni." }
         });
+
 
     try {
         const url = `${process.env.BASE_URL}:${process.env.AUTH_API_PORT}/api${process.env.VALIDATE_TOKEN_ENDPOINT}`;
@@ -42,7 +44,7 @@ exports.ensureAdmin = (req, res, next) => {
 };
 
 exports.ensureSelfOrAdmin = (req, res, next) => {
-    if (req.user && (req.user.id === req.params.uid || req.params.uid === 'me' || req.user.roles.includes('ROLE_ADMIN'))) {
+    if (req.user && (req.user.uid === req.params.userUid || req.user.roles.includes('ROLE_ADMIN'))) {
         return next();
     }
     return res.status(403).json({ message: "Accès refusé : vous ne pouvez accéder qu'à votre propre compte, sauf si vous êtes administrateur." });

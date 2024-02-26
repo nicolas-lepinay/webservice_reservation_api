@@ -1,10 +1,14 @@
 const router = require("express").Router();
 const cinemaController = require("../controllers/cinemaController");
 const roomsController = require("../controllers/roomsController");
+const seanceController = require("../controllers/seanceController");
 
 const { authenticate, ensureAdmin } = require('../middlewares/middleware');
 
-/* ======= CINEMAS ======= */
+/**
+ * 🎬 CINEMAS
+ */
+
 // CREATE A CINEMA
 router.post("/", authenticate, ensureAdmin, cinemaController.create); 
 
@@ -20,7 +24,12 @@ router.put("/:uid", authenticate, ensureAdmin, cinemaController.update);
 // DELETE A CINEMA
 router.delete("/:uid", authenticate, ensureAdmin, cinemaController.delete); 
 
-/* ======= ROOMS ======= */
+
+
+/**
+ * 💺 ROOMS
+ */
+
 // CREATE A ROOM
 router.post(`/:cinemaUid${process.env.ROOMS_ENDPOINT}`, authenticate, ensureAdmin, roomsController.createRoom); 
 
@@ -35,5 +44,14 @@ router.put(`/:cinemaUid${process.env.ROOMS_ENDPOINT}/:roomUid`, authenticate, en
 
 // DELETE A ROOM
 router.delete(`/:cinemaUid${process.env.ROOMS_ENDPOINT}/:roomUid`, authenticate, ensureAdmin, roomsController.delete); 
+
+
+
+/**
+ * 🎫 SEANCE
+ */
+
+// CREATE A SEANCE
+router.post(`/:cinemaUid${process.env.ROOMS_ENDPOINT}/:roomUid${process.env.SEANCE_ENDPOINT}`, authenticate, ensureAdmin, seanceController.createSeance); 
 
 module.exports = router;
