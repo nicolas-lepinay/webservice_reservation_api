@@ -10,7 +10,7 @@ exports.authenticate = async (req, res, next) => {
 
 
     try {
-        const url = `${process.env.BASE_URL}:${process.env.AUTH_API_PORT}/api${process.env.VALIDATE_TOKEN_ENDPOINT}`;
+        const url = `${process.env.AUTH_API_URL}:${process.env.AUTH_API_PORT}/api${process.env.VALIDATE_TOKEN_ENDPOINT}`;
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
