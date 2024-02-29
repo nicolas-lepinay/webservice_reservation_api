@@ -2,6 +2,7 @@ const router = require("express").Router();
 const cinemaController = require("../controllers/cinemaController");
 const roomsController = require("../controllers/roomsController");
 const seanceController = require("../controllers/seanceController");
+const reservationController = require("../controllers/reservationController");
 
 const { authenticate, ensureAdmin } = require('../middlewares/middleware');
 
@@ -53,5 +54,17 @@ router.delete(`/:cinemaUid${process.env.ROOMS_ENDPOINT}/:roomUid`, authenticate,
 
 // CREATE A SEANCE
 router.post(`/:cinemaUid${process.env.ROOMS_ENDPOINT}/:roomUid${process.env.SEANCE_ENDPOINT}`, authenticate, ensureAdmin, seanceController.createSeance); 
+
+// GET A ROOM'S SEANCES
+router.get(`/:cinemaUid${process.env.ROOMS_ENDPOINT}/:roomUid${process.env.SEANCE_ENDPOINT}`, authenticate, seanceController.findByRoomUid); 
+
+// UPDATE A SEANCE
+router.put(`/:cinemaUid${process.env.ROOMS_ENDPOINT}/:roomUid${process.env.SEANCE_ENDPOINT}/:seanceUid`, authenticate, ensureAdmin, seanceController.createSeance); 
+
+// UPDATE A SEANCE
+router.put(`/:cinemaUid${process.env.ROOMS_ENDPOINT}/:roomUid${process.env.SEANCE_ENDPOINT}/:seanceUid`, authenticate, ensureAdmin, seanceController.updateSeance); 
+
+// DELETE A SEANCE
+router.delete(`/:cinemaUid${process.env.ROOMS_ENDPOINT}/:roomUid${process.env.SEANCE_ENDPOINT}/:seanceUid`, authenticate, ensureAdmin, seanceController.deleteSeance);
 
 module.exports = router;

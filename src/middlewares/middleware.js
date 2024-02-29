@@ -8,7 +8,6 @@ exports.authenticate = async (req, res, next) => {
             error: { code: 401, message: "Accès refusé. Aucun token fourni." }
         });
 
-
     try {
         const url = `${process.env.AUTH_API_URL}:${process.env.AUTH_API_PORT}/api${process.env.VALIDATE_TOKEN_ENDPOINT}`;
         const response = await fetch(url, {
