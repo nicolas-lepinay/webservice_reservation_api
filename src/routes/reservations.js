@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const reservationController = require("../controllers/reservationController");
-const { authenticate, ensureAdmin } = require('../middlewares/middleware');
+const { authenticate } = require('../middlewares/middleware');
 
 /**
  * 🎫 RESERVATIONS

@@ -11,6 +11,7 @@ dotenv.config();
 // 🚗 Routes
 const cinemaRoute = require("./routes/cinema")
 const reservationRoute = require("./routes/reservations")
+const movieReservationRoute = require("./routes/movieReservations")
 
 // ➡️ Module imports :
 //const swagger = require("./doc/swagger.js");
@@ -33,6 +34,7 @@ app.use(morgan("common"));
 // =====> API Routes
 app.use(`/api${process.env.CINEMA_ENDPOINT}`, cinemaRoute);
 app.use(`/api${process.env.RESERVATION_ENDPOINT}`, reservationRoute);
+app.use(`/api${process.env.MOVIE_ENDPOINT}`, movieReservationRoute);
 
 // =====> Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerFile, { swaggerOptions: { persistAuthorization: true } }));

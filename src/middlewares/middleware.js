@@ -2,7 +2,6 @@ const fetch = require('node-fetch');
 
 exports.authenticate = async (req, res, next) => {
     const token = req.headers.authorization?.split(" ")[1]; // Bearer <token>
-    !token ? console.log("TOKEN ABSENT :(") : console.log("TOKEN PRESENT !");
     if (!token) return res.status(401).json(
         { 
             error: { code: 401, message: "Accès refusé. Aucun token fourni." }

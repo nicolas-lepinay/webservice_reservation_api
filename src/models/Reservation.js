@@ -6,13 +6,11 @@ const ReservationSchema = new mongoose.Schema({
         type: String,
         unique: true,
     },
-    status: [
-        { 
-            type: String, 
-            enum: ['open', 'expired', 'confirmed'], 
-            default: 'open'
-        }
-    ],
+    status: {
+        type: String, 
+        enum: ['open', 'expired', 'confirmed'], 
+        default: 'open',
+    },
     seats: {
         type: Number,
         required: true,
