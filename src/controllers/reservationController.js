@@ -162,3 +162,29 @@ module.exports.create = async (req, res) => {
         return res.status(500).json({ error: { message: `Erreur interne : ${err}` }});
     }
 }
+
+// * GET ONE RESERVATION *
+module.exports.findOne = async (req, res) => {
+    try {
+        const { uid } = req.params;
+        const reservation = await Reservation.find({ uid: uid }).select('-_id -__v');
+
+        // La réservation n'existe pas
+        if (!reservation) {
+            return res.status(404).json({ error: { message: "Réservation introuvable." }})
+        };
+        // La réservation n'appartient pas à l'utilisateur et il n'est pas admin 
+        if (reservation.userUid !== req.user.uid && !req.user.roles.includes('ROLE_ADMIN')) {
+            return res.status(403).json({ error: { message: "Action non-autorisée (la réservation n'appartient pas à l'utilisateur connecté)." }})
+        };
+        // Le statut de la réservation doit être mis à jour
+        if (reservation.status === 'open' && new Date() > reservation.expiresAt) {
+            Reservation.updateOne({ status: 'expired' });
+        }
+        // Retourner la réservation
+        return res.status(200).json(reservation);
+
+    } catch (err) {
+        return res.status(500).json({ error: { message: `Erreur interne : ${err}` }});
+    }
+}

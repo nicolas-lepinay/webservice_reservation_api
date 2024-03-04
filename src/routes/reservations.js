@@ -8,4 +8,7 @@ const { authenticate } = require('../middlewares/middleware');
 // CONFIRM A RESERVATION
 router.post(`/:uid/confirm`, authenticate, reservationController.confirm); 
 
+// FIND A RESERVATION
+router.get(`/:uid`, authenticate, reservationController.findOne); 
+
 module.exports = router;
