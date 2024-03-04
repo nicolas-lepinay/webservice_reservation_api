@@ -13,12 +13,13 @@ module.exports.confirm = async (req, res) => {
         // Trouver la réservation spécifique par UID
         const reservation = await Reservation.findOne({ uid: reservationUid });
         if (!reservation) return res.status(404).json({ error: { message: "Réservation introuvable." }});
-        if (!reservation.userUid !== userUid) return res.status(403).json({ error: { message: "Action non-autorisée (la réservation n'appartient pas à l'utilisateur connecté)." }});
-        if (!reservation.status !== 'open') return res.status(410).json({ error: { message: `Cette réservation ne peut plus être confirmée (statut actuel : ${reservation.status}).`  }});
+        if (reservation.userUid !== userUid) return res.status(403).json({ error: { message: "Action non-autorisée (la réservation n'appartient pas à l'utilisateur connecté)." }});
+        if (reservation.status !== 'open') return res.status(410).json({ error: { message: `Cette réservation ne peut plus être confirmée (statut actuel : ${reservation.status}).`  }});
 
         // Récupérer toutes les réservations pour cette séance
         let otherReservations = await Reservation.find({ seanceUid: { $in: reservation.seanceUid } }).select('-_id -__v');
 
+        // 1️⃣ MISE A JOUR DU STATUS DES RESERVATIONS EXPIRED
         // Préparer une liste de promesses pour les mises à jour de statut
         const updatePromises = [];
 
@@ -36,9 +37,17 @@ module.exports.confirm = async (req, res) => {
         // Si des mises à jour ont eu lieu, récupérer à nouveau les réservations
         if (updatePromises.length > 0) otherReservations = await Reservation.find({ seanceUid: { $in: reservation.seanceUid } }).select('-_id -__v');
 
-        // Calculer le rang de la nouvelle réservation
-        const rank = otherReservations.filter(reservation => reservation.status === 'open').length + 1;
-        if (rank > 1) return res.status(400).json({ error: { message: `Vous êtes en ${rank}ème position dans la file d'attente...` }});
+        // 2️⃣ CALCUL DU RANK
+        // Filtrer les réservations ouvertes
+        const openReservations = otherReservations.filter(res => res.status === 'open');
+
+        // Trier les positions des réservations ouvertes par ordre croissant
+        const sortedPositions = openReservations.map(res => res.position).sort((a, b) => a - b);
+
+        // Trouver le rang de la position de la réservation actuelle
+        const rank = sortedPositions.indexOf(reservation.position) + 1; // +1 car les index commencent à 0
+
+        if (rank !== 1) return res.status(400).json({ error: { message: `Vous êtes en ${rank}ème position dans la file d'attente et ne pouvez pas confirmer la réservation actuellement.` }});
 
         reservation.status = 'confirmed';
         await reservation.save();
@@ -112,8 +121,8 @@ module.exports.create = async (req, res) => {
         // Vérifier la disponibilité des sièges
         if (room.seats - confirmedSeats < nbSeats) return res.status(400).json({ error: { message: `Le nombre de sièges disponibles est insuffisant : ${confirmedSeats} sièges disponibles.` }});
 
-        // Trouver la position la plus élevée parmi les réservations existantes
-        const highestPosition = existingReservations.reduce((max, reservation) => {
+        // Trouver la position la plus élevée parmi les réservations ouvertes existantes
+        const highestPosition = existingReservations.filter(r => r.status == 'open').reduce((max, reservation) => {
             return reservation.position > max ? reservation.position : max;
         }, 0);
 
