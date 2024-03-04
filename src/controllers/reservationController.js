@@ -41,11 +41,8 @@ module.exports.confirm = async (req, res) => {
         // Filtrer les réservations ouvertes
         const openReservations = otherReservations.filter(res => res.status === 'open');
 
-        // Trier les positions des réservations ouvertes par ordre croissant
-        const sortedPositions = openReservations.map(res => res.position).sort((a, b) => a - b);
-
         // Trouver le rang de la position de la réservation actuelle
-        const rank = sortedPositions.indexOf(reservation.position) + 1; // +1 car les index commencent à 0
+        const rank = getRank(reservation, openReservations);
 
         if (rank !== 1) return res.status(400).json({ error: { message: `Vous êtes en ${rank}ème position dans la file d'attente et ne pouvez pas confirmer la réservation actuellement.` }});
 
@@ -76,10 +73,10 @@ module.exports.findAll = async (req, res) => {
         // Préparer une liste de promesses pour les mises à jour de statut
         const updatePromises = [];
 
-        // Vérifier si la date actuelle est supérieure à 'expiresAt' pour les réservations 'open'
+        const now = new Date();
         reservations.forEach(reservation => {
-            if (reservation.status === 'open' && new Date() > reservation.expiresAt) {
-                // Ajouter la promesse de mise à jour à la liste
+            // Vérifier si la date actuelle est supérieure à 'expiresAt' pour les réservations 'open'
+            if (reservation.status === 'open' && now > reservation.expiresAt) {
                 updatePromises.push(Reservation.updateOne({ uid: reservation.uid }, { status: 'expired' }));
             }
         });
@@ -89,9 +86,21 @@ module.exports.findAll = async (req, res) => {
 
         // Si des mises à jour ont eu lieu, récupérer à nouveau les réservations
         if (updatePromises.length > 0) reservations = await Reservation.find({ seanceUid: { $in: seanceUids } }).select('-_id -__v');
+
+        // Calcul du rank des réservations
+        const rankedReservations = reservations.map((reservation, index, array) => {
+            let rank = null;
+            if (reservation.status === 'open') {
+                const openReservations = array.filter(res => res.status === 'open');
+                rank = getRank(reservation, openReservations);
+            }
+            // Exclure la propriété 'position'
+            const { position, ...reservationWithoutPosition } = reservation.toObject();
+            return { ...reservationWithoutPosition, rank }; // Retourne l'objet sans la propriété 'position'
+        });
         
-        // Retourner les réservations
-        return res.status(200).json(reservations);
+        // Retourner les réservations avec rank
+        return res.status(200).json(rankedReservations);
     } catch (err) {
         return res.status(500).json({ error: { message: `Erreur interne : ${err}` }});
     }
@@ -130,7 +139,7 @@ module.exports.create = async (req, res) => {
         const position = highestPosition + 1;
 
         // Calculer le rang de la nouvelle réservation
-        const rank = existingReservations.filter(reservation => reservation.status === 'open').length + 1;
+        const rank = createRank(existingReservations);
 
         // Créer une date d'expiration pour la nouvelle réservation
         const expiresAt = new Date(Date.now() + 10 * 60000); // Ajoute 10 minutes à la date actuelle
@@ -167,7 +176,8 @@ module.exports.create = async (req, res) => {
 module.exports.findOne = async (req, res) => {
     try {
         const { uid } = req.params;
-        const reservation = await Reservation.find({ uid: uid }).select('-_id -__v');
+        const reservations = await Reservation.find().select('-_id -__v');
+        const reservation = reservations.find(r => r.uid === uid);
 
         // La réservation n'existe pas
         if (!reservation) {
@@ -179,12 +189,32 @@ module.exports.findOne = async (req, res) => {
         };
         // Le statut de la réservation doit être mis à jour
         if (reservation.status === 'open' && new Date() > reservation.expiresAt) {
-            Reservation.updateOne({ status: 'expired' });
+            Reservation.updateOne({uid: reservation.uid}, { status: 'expired' });
         }
-        // Retourner la réservation
-        return res.status(200).json(reservation);
+        const openReservations = reservations.filter(res => res.status === 'open');
+        const rank = reservation.status === 'open' ? getRank(reservation, openReservations) : null;
+
+        // Retourner la réservation (sans la position mais avec le rank)
+        const { position, ...reservationWithoutPosition } = reservation.toObject();
+        return res.status(200).json({ ...reservationWithoutPosition, rank });
 
     } catch (err) {
         return res.status(500).json({ error: { message: `Erreur interne : ${err}` }});
     }
+}
+
+function getRank(reservation, otherReservations) {
+    // Trier les positions des réservations ouvertes par ordre croissant
+    const sortedPositions = otherReservations.map(reservation => reservation.position).sort((a, b) => a - b);
+
+    // Trouver le rang de la position de la réservation actuelle
+    const rank = sortedPositions.indexOf(reservation?.position) + 1; // +1 car les index commencent à 0
+
+    return rank;
+}
+
+function createRank(otherReservations) {
+    // Calculer le rang de la nouvelle réservation
+    const rank = otherReservations.filter(reservation => reservation.status === 'open').length + 1;
+    return rank;
 }
