@@ -1,6 +1,7 @@
 const Room = require("../models/Room");
 const Seance = require("../models/Seance");
 const Movie = require("../models/Movie");
+const amqp = require("amqplib");
 
 const { v4: uuidv4 } = require('uuid');
 const { fetchMovieByUid } = require('../utils/fetch');
@@ -58,6 +59,38 @@ module.exports.createSeance = async (req, res) => {
         // Si aucune séance conflictuelle, sauvegarder la nouvelle séance
         const newSeance = new Seance({ uid: uuidv4(), movieUid, roomUid, date: date });
         const savedSeance = await newSeance.save();
+
+        // Récuperer tous les utilisateurs
+        const url = `${process.env.AUTH_API_URL}:${process.env.AUTH_API_PORT}/api${process.env.ACCOUNT_ENDPOINT}${process.env.ALL_USERS}`;
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json', 'Authorization' : 'Bearer ' + req.token }
+        });
+
+        //console.log(await allUsers.json());
+        const dataAllUsers = await response.json();
+
+       // Envoyer à Rabbitmq notification de nouvelle séance pour chaque utilisateur
+        dataAllUsers.forEach(async user => {
+             // Send message to rabbit mq
+            if (user.email != undefined) {
+                const msg = {
+                    login: user.login,
+                    email: user.email,
+                    movie : movie.name,
+                    dateSeance : savedSeance.date
+                }
+                
+                console.log("Envoi d'un message à RabbitMQ pour l'utilisateur : " + user.login);
+                const amqpServer = "amqp://guest:guest@rabbitmq:5672"
+                const connection = await amqp.connect(amqpServer)
+                const channel = await connection.createChannel();
+                await channel.assertQueue("seance-queue");
+                await channel.sendToQueue("seance-queue", Buffer.from(JSON.stringify(msg)))
+                await channel.close();
+                await connection.close();
+            }            
+        });       
 
         return res.status(201).json({
             uid: savedSeance.uid,

@@ -24,6 +24,7 @@ exports.authenticate = async (req, res, next) => {
 
 
         req.user = data.user;
+        req.token = data.accessToken;
         next();
     } catch (error) {
         return res.status(500).json(

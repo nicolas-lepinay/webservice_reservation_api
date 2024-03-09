@@ -1,6 +1,7 @@
 const Reservation = require("../models/Reservation");
 const Room = require("../models/Room");
 const Seance = require("../models/Seance");
+const amqp = require("amqplib");
 
 const { v4: uuidv4 } = require('uuid');
 
@@ -109,6 +110,7 @@ module.exports.findAll = async (req, res) => {
 // * CREATE A RESERVATION REQUEST *
 module.exports.create = async (req, res) => {
     const movieUid = req.params.movieUid; // Inutilisé
+    const emailUser = req.params.email;
     const seanceUid = req.body.seance;
     const roomUid = req.body.room;
     const nbSeats = req.body.nbSeats;
@@ -151,11 +153,28 @@ module.exports.create = async (req, res) => {
             seats: nbSeats,
             seanceUid: seanceUid,
             userUid: userUid,
+            userEmail: emailUser,
             expiresAt: expiresAt,
             position: position,
         });
 
         const savedReservation = await newReservation.save();
+
+        // Send message to rabbit mq
+        const msg = {
+            email: savedReservation.userEmail,
+            seats: savedReservation.seats
+        }
+
+        // Envoyer à Rabbitmq notification de réservation
+        console.log("Send message to rabbit MQ");
+        const amqpServer = "amqp://guest:guest@rabbitmq:5672"
+        const connection = await amqp.connect(amqpServer)
+        const channel = await connection.createChannel();
+        await channel.assertQueue("reservation-queue");
+        await channel.sendToQueue("reservation-queue", Buffer.from(JSON.stringify(msg)))
+        await channel.close();
+        await connection.close();
 
         return res.status(201).json({
             uid: savedReservation.uid,
