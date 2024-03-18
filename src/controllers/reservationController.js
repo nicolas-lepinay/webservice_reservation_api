@@ -161,7 +161,6 @@ module.exports.create = async (req, res) => {
             seats: nbSeats,
             seanceUid: seanceUid,
             userUid: userUid,
-            userEmail: emailUser,
             expiresAt: expiresAt,
             position: position,
         });

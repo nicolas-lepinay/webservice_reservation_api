@@ -1,3 +1,5 @@
+const amqp = require("amqplib");
+
 exports.sendMsgToRabbitMQ = async (queue, msg) => {
     const amqpServer = "amqp://guest:guest@rabbitmq:5672"
     const connection = await amqp.connect(amqpServer)

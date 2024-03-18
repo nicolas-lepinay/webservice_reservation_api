@@ -6,6 +6,7 @@ const amqp = require("amqplib");
 const { v4: uuidv4 } = require('uuid');
 const { fetchAllUsers } = require('../utils/fetch');
 const { sendMsgToRabbitMQ } = require('../utils/rabbitmqUtils');
+const { convertToReadableDate } = require('../utils/otherUtils');
 
 // * CREATE A SEANCE *
 module.exports.createSeance = async (req, res) => {
@@ -62,8 +63,8 @@ module.exports.createSeance = async (req, res) => {
         const savedSeance = await newSeance.save();
 
         // ✉️ Envoyer à RabbitMQ une notification de nouvelle séance pour chaque utilisateur
-        const allUsers = await fetchAllUsers();
-        const dataAllUsers = allUsers.json();
+        const allUsers = await fetchAllUsers(req);
+        const dataAllUsers = await allUsers.json();
 
         dataAllUsers.forEach(async user => {
             // Send message to rabbit mq
@@ -72,7 +73,7 @@ module.exports.createSeance = async (req, res) => {
                     login: user.login,
                     email: user.email,
                     movie : movie.name,
-                    dateSeance : savedSeance.date
+                    dateSeance : convertToReadableDate(savedSeance.date),
                 }
                 console.log("Envoi d'un message à RabbitMQ pour l'utilisateur : " + user.login);
                 sendMsgToRabbitMQ("seance-queue", msg);
