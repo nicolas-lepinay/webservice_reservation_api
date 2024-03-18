@@ -10,3 +10,14 @@ exports.fetchMovieByUid = async (movieUid) => {
 
     return response;
 }
+
+exports.fetchAllUsers = async () => { 
+    const url = `${process.env.AUTH_API_URL}:${process.env.AUTH_API_PORT}/api${process.env.ACCOUNT_ENDPOINT}${process.env.ALL_USERS}`;
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+    });
+    
+    return response;
+}
